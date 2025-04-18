@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartCart - RFID Billing System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #60a5fa;
+      --primary-dark: #1e40af;
+      --secondary: #7c3aed;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --dark: #1f2937;
+      --light: #ffffff;
+      --gray: #f3f4f6;
+      --dark-gray: #6b7280;
+      --border-radius: 16px;
+      --box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --gradient: linear-gradient(135deg, var(--primary), var(--secondary));
+      --glass-bg: rgba(255, 255, 255, 0.95);
+      --glass-border: rgba(255, 255, 255, 0.2);
+      --glass-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #e0e7ff 0%, #f0f9ff 100%);
+      color: var(--dark);
+      line-height: 1.6;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(124, 58, 237, 0.1) 0%, transparent 50%);
+      z-index: -1;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 50px;
+      padding: 30px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border-radius: var(--border-radius);
+      box-shadow: var(--glass-shadow);
+      border: 1px solid var(--glass-border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      background-size: 200% 200%;
+      animation: shine 8s infinite;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .logo i {
+      font-size: 3.5rem;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 4px 8px rgba(37, 99, 235, 0.3));
+    }
+
+    .logo h1 {
+      font-size: 2.8rem;
+      font-weight: 700;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 8px rgba(37, 99, 235, 0.2);
+    }
+
+    .scanner-status {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 20px 30px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      box-shadow: var(--glass-shadow);
+      transition: var(--transition);
+    }
+
+    .scanner-status:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    }
+
+    .scanner-status i {
+      font-size: 1.6rem;
+    }
+
+    .scanner-status.ready {
+      color: var(--primary);
+    }
+
+    .scanner-status.scanning {
+      color: var(--warning);
+      animation: pulse 1.5s infinite;
+    }
+
+    .scanner-status.success {
+      color: var(--success);
+    }
+
+    .scanner-status.error {
+      color: var(--danger);
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.8; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .cart-section, .system-status {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      box-shadow: var(--glass-shadow);
+      padding: 30px;
+      transition: var(--transition);
+    }
+
+    .cart-section:hover, .system-status:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid rgba(37, 99, 235, 0.1);
+    }
+
+    .section-header h2 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    .cart-icon {
+      position: relative;
+      font-size: 1.8rem;
+      color: var(--primary);
+    }
+
+    .cart-count {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      background: var(--gradient);
+      color: white;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+
+    .cart-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 20px;
+    }
+
+    .cart-table th {
+      text-align: left;
+      padding: 20px;
+      font-weight: 500;
+      color: var(--dark-gray);
+      background: rgba(37, 99, 235, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+    }
+
+    .cart-table td {
+      padding: 25px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      border-radius: 15px;
+      transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .cart-table td:hover {
+      transform: translateX(10px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      border-color: var(--primary-light);
+    }
+
+    .cart-table td:first-child {
+      border-left: 4px solid var(--primary);
+    }
+
+    .item-name {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .item-number {
+      width: 30px;
+      height: 30px;
+      background: var(--gradient);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 1rem;
+      box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+    }
+
+    .quantity-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-left: auto;
+      transition: all 0.3s ease;
+    }
+
+    .quantity-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: var(--gradient);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      font-size: 1.2rem;
+      box-shadow: 0 4px 8px rgba(37, 99, 235, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quantity-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      background-size: 200% 200%;
+      animation: shine 3s infinite;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .quantity-btn:hover::before {
+      opacity: 1;
+    }
+
+    .quantity-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .quantity-btn:active {
+      transform: scale(0.95);
+    }
+
+    .quantity-value {
+      min-width: 32px;
+      text-align: center;
+      font-weight: 600;
+      color: var(--primary-dark);
+      transition: all 0.3s ease;
+    }
+
+    .delete-btn {
+      padding: 8px 15px;
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      margin-left: 15px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .delete-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      background-size: 200% 200%;
+      animation: shine 3s infinite;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .delete-btn:hover::before {
+      opacity: 1;
+    }
+
+    .delete-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+      transform: translateX(5px);
+      box-shadow: 0 4px 8px rgba(239, 68, 68, 0.2);
+    }
+
+    .delete-btn:active {
+      transform: translateX(5px) scale(0.95);
+    }
+
+    .delete-btn i {
+      font-size: 1rem;
+      transition: transform 0.3s ease;
+    }
+
+    .delete-btn:hover i {
+      transform: rotate(15deg);
+    }
+
+    .empty-cart {
+      text-align: center;
+      padding: 60px 0;
+      color: var(--dark-gray);
+    }
+
+    .empty-cart i {
+      font-size: 5rem;
+      margin-bottom: 25px;
+      color: var(--gray);
+      opacity: 0.5;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+    }
+
+    .total-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 40px;
+      padding-top: 30px;
+      border-top: 2px dashed rgba(37, 99, 235, 0.2);
+    }
+
+    .total-amount {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 4px 8px rgba(37, 99, 235, 0.3));
+    }
+
+    .checkout-btn {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 20px 40px;
+      background: var(--gradient);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 20px 40px rgba(37, 99, 235, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .checkout-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      background-size: 200% 200%;
+      animation: shine 3s infinite;
+    }
+
+    .checkout-btn:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    }
+
+    .checkout-btn:active {
+      transform: translateY(0);
+    }
+
+    .product-card {
+      display: flex;
+      align-items: center;
+      gap: 25px;
+      padding: 25px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      border-radius: 15px;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .product-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+      border-color: var(--primary-light);
+    }
+
+    .product-icon {
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--gradient);
+      color: white;
+      border-radius: 20px;
+      font-size: 2rem;
+      box-shadow: 0 15px 35px rgba(37, 99, 235, 0.3);
+    }
+
+    .product-info h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: var(--dark);
+    }
+
+    .product-price {
+      font-weight: 600;
+      color: var(--primary-dark);
+      font-size: 1.1rem;
+    }
+
+    .system-status {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      box-shadow: var(--glass-shadow);
+      padding: 30px;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .system-status::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      background-size: 200% 200%;
+      animation: shine 8s infinite;
+      z-index: 0;
+    }
+
+    .system-status .section-header {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 40px;
+      padding-bottom: 25px;
+      border-bottom: 2px solid rgba(37, 99, 235, 0.1);
+    }
+
+    .system-status .section-header h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 8px rgba(37, 99, 235, 0.2);
+    }
+
+    .status-list {
+      position: relative;
+      z-index: 1;
+    }
+
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      border-radius: 15px;
+      margin-bottom: 15px;
+      transition: var(--transition);
+      position: relative;
+      overflow: visible;
+    }
+
+    .status-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      background-size: 200% 200%;
+      animation: shine 8s infinite;
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .status-item:hover::before {
+      opacity: 1;
+    }
+
+    .status-item:hover {
+      transform: translateX(10px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      border-color: var(--primary-light);
+    }
+
+    .status-label {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--dark);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .status-label i {
+      font-size: 1.2rem;
+      color: var(--primary);
+      filter: drop-shadow(0 4px 8px rgba(37, 99, 235, 0.3));
+      min-width: 20px;
+    }
+
+    .status-value {
+      font-weight: 600;
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+
+    .status-value i {
+      font-size: 1rem;
+    }
+
+    .online {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      padding: 8px 15px;
+    }
+
+    .offline {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      padding: 8px 15px;
+    }
+
+    #debugOutput {
+      background: var(--glass-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      border-radius: 15px;
+      padding: 20px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 992px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+      }
+
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 25px;
+      }
+
+      .cart-table th, .cart-table td {
+        padding: 15px;
+      }
+
+      .checkout-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    @keyframes itemAdded {
+      0% { 
+        transform: scale(1);
+        opacity: 0;
+      }
+      50% { 
+        transform: scale(1.05);
+        opacity: 1;
+      }
+      100% { 
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .new-item {
+      animation: itemAdded 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    @keyframes shine {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .product-database {
+      display: none;
+    }
+
+    .modal-overlay,
+    .payment-modal,
+    .qr-container,
+    .payment-amount,
+    .accepted-here,
+    .payment-methods,
+    .payment-instructions,
+    .close-modal {
+      display: none;
+    }
+
+    /* Add toast notification styles */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      background: var(--danger);
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 2000;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-20px);
+      transition: all 0.3s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .toast i {
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <i class="fas fa-shopping-cart"></i>
+        <h1>SmartCart</h1>
+      </div>
+      <div class="scanner-status ready" id="scannerStatus">
+        <i class="fas fa-rss"></i>
+        <span>Scanner Ready</span>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <section class="cart-section">
+        <div class="section-header">
+          <h2>Your Shopping Cart</h2>
+          <div class="cart-icon">
+            <i class="fas fa-shopping-basket"></i>
+            <span class="cart-count" id="cartCount">0</span>
+          </div>
+        </div>
+
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Price</th>
+            </tr>
+          </thead>
+          <tbody id="cartBody">
+            <tr class="empty-cart-message">
+              <td colspan="3">
+                <div class="empty-cart">
+                  <i class="fas fa-box-open"></i>
+                  <p>No items scanned yet</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="total-section">
+          <div>
+            <h3>Total Amount</h3>
+            <p class="total-amount" id="totalAmount">₹0.00</p>
+          </div>
+          <button class="checkout-btn" id="checkoutBtn">
+            <i class="fas fa-wallet"></i>
+            Checkout
+          </button>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <div class="system-status">
+          <div class="section-header">
+            <h2>System Status</h2>
+          </div>
+          <div class="status-list">
+            <div class="status-item">
+              <span class="status-label">
+                <i class="fas fa-rss"></i>
+                RFID Scanner
+              </span>
+              <span class="status-value online" id="scannerStatusText">
+                <i class="fas fa-check-circle"></i>
+                Online
+              </span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">
+                <i class="fas fa-cloud"></i>
+                Ubidots Connection
+              </span>
+              <span class="status-value online" id="ubidotsStatus">
+                <i class="fas fa-check-circle"></i>
+                Online
+              </span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">
+                <i class="fas fa-clock"></i>
+                Last Update
+              </span>
+              <span class="status-value" id="lastUpdate">
+                <i class="fas fa-sync"></i>
+                Just now
+              </span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="toast" id="errorToast">
+    <i class="fas fa-exclamation-circle"></i>
+    <span>Cart is empty - Please add items</span>
+  </div>
+
+  <script>
+    const CONFIG = {
+      UBIDOTS_TOKEN: "BBUS-gsCDjpaE6w6x2wpWCCUgK39w4Xk2sU",
+      VARIABLE_ID: "67fa7f50fd88d23c76ca2061",
+      USE_MOCK_DATA: false,
+      POLL_INTERVAL: 3000,
+      DEBUG_MODE: true,
+      MAX_RETRIES: 5,
+      TIMEOUT_DURATION: 5000,
+      SCAN_WINDOW: 60000,
+      RECENT_SCAN_THRESHOLD: 10000,
+      UNKNOWN_UID_MESSAGE_DURATION: 3000
+    };
+
+    const PRODUCT_DATABASE = {
+      13640403: { name: "Bread", price: 50.00, icon: "fas fa-bread-slice" },
+      21872843: { name: "Milk", price: 30.00, icon: "fas fa-wine-bottle" },
+      41634343: { name: "Chocolate", price: 150.00, icon: "fas fa-candy" },
+      21553543: { name: "Biscuit", price: 50.00, icon: "fas fa-cookie" },
+      29939002: { name: "Chips", price: 100.00, icon: "fas fa-french-fries" }
+    };
+
+    let cartItems = [];
+    let lastUpdateTime = 0;
+    let apiErrorCount = 0;
+    let lastProcessedTime = 0;
+    const MIN_SCAN_INTERVAL = 2000;
+    let isPolling = false;
+    let lastScanValue = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      renderCart();
+      startPolling();
+      updateLastUpdateTime();
+      
+      document.addEventListener("keydown", (e) => {
+        const keyMap = { '1':13640403, '2':21872843, '3':41634343, '4':21553543, '5':29939002 };
+        if (keyMap[e.key]) processProductScan(keyMap[e.key]);
+      });
+
+      const checkoutBtn = document.getElementById('checkoutBtn');
+      if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', () => {
+          if (cartItems.length > 0) {
+            const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            showErrorToast(`Total amount: ₹${total.toFixed(2)}`);
+          } else {
+            showErrorToast("Cart is empty - Please add items");
+          }
+        });
+      }
+    });
+
+    function startPolling() {
+      if (!isPolling) {
+        isPolling = true;
+        checkForNewScans();
+        setInterval(checkForNewScans, CONFIG.POLL_INTERVAL);
+      }
+    }
+
+    async function checkForNewScans() {
+      if (CONFIG.USE_MOCK_DATA) {
+        mockScan();
+        return;
+      }
+
+      try {
+        updateStatus("Scanner Ready", "ready");
+        
+        const endTime = Date.now();
+        const startTime = endTime - CONFIG.SCAN_WINDOW;
+        
+        const apiUrl = `https://industrial.api.ubidots.com/api/v1.6/variables/${CONFIG.VARIABLE_ID}/values?page_size=1&start=${startTime}&end=${endTime}&sort=-timestamp`;
+        
+        const response = await fetchWithTimeout(apiUrl, {
+          headers: {
+            'X-Auth-Token': CONFIG.UBIDOTS_TOKEN,
+            'Content-Type': 'application/json'
+          }
+        }, CONFIG.TIMEOUT_DURATION);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.results?.length > 0) {
+          const scan = data.results[0];
+          const timestamp = new Date(scan.timestamp).getTime();
+          const currentTime = Date.now();
+          const timeSinceLastProcess = currentTime - lastProcessedTime;
+          const scannedUID = Number(scan.value);
+          
+          if (timestamp > lastUpdateTime && 
+              timeSinceLastProcess >= MIN_SCAN_INTERVAL &&
+              (currentTime - timestamp) < CONFIG.RECENT_SCAN_THRESHOLD &&
+              scannedUID !== lastScanValue) {
+            
+            lastUpdateTime = timestamp;
+            lastProcessedTime = currentTime;
+            lastScanValue = scannedUID;
+            
+            updateStatus("Scanning...", "scanning");
+            debugLog("Processing new scan - UID:", scannedUID);
+            
+            if (PRODUCT_DATABASE[scannedUID]) {
+              processProductScan(scannedUID);
+            } else {
+              showUnknownUIDError(scannedUID);
+            }
+          }
+        }
+        
+        apiErrorCount = 0;
+        updateUbidotsStatus("online");
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          debugLog("API request timed out - retrying...");
+          updateUbidotsStatus("offline");
+          return;
+        }
+        handleApiError(error);
+      }
+    }
+
+    function processProductScan(productId) {
+      const product = PRODUCT_DATABASE[productId];
+      
+      if (!product) {
+        showUnknownUIDError(productId);
+        return;
+      }
+
+      const existingItem = cartItems.find(item => item.id === productId);
+      
+      if (existingItem) {
+        existingItem.quantity++;
+        debugLog(`Increased quantity of ${product.name} to ${existingItem.quantity}`);
+      } else {
+        cartItems.push({
+          id: productId,
+          name: product.name,
+          price: product.price,
+          quantity: 1,
+          icon: product.icon
+        });
+        debugLog(`Added new item: ${product.name}`);
+      }
+      
+      updateStatus(`Added: ${product.name}`, "success");
+      renderCart();
+    }
+
+    function showUnknownUIDError(uid) {
+      // Simply log the error and update status
+      updateStatus(`Unauthorized UID: ${uid}`, "error");
+      debugLog("Unauthorized UID detected:", uid);
+    }
+
+    function renderCart() {
+      const cartBody = document.getElementById("cartBody");
+      const cartCount = document.getElementById("cartCount");
+      const totalAmount = document.getElementById("totalAmount");
+      
+      // Update cart count
+      const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+      cartCount.textContent = totalItems;
+      
+      // Update cart table
+      if (cartItems.length === 0) {
+        cartBody.innerHTML = `
+          <tr class="empty-cart-message">
+            <td colspan="3">
+              <div class="empty-cart">
+                <i class="fas fa-box-open"></i>
+                <p>No items scanned yet</p>
+              </div>
+            </td>
+          </tr>
+        `;
+      } else {
+        let html = '';
+        cartItems.forEach((item, index) => {
+          html += `
+            <tr class="new-item">
+              <td>
+                <div class="item-name">
+                  <div class="item-number">${index + 1}</div>
+                  <span>${item.name}</span>
+                  <div class="quantity-controls">
+                    <button class="quantity-btn" onclick="updateQuantity(${index}, -1)">-</button>
+                    <span class="quantity-value">${item.quantity}</span>
+                    <button class="quantity-btn" onclick="updateQuantity(${index}, 1)">+</button>
+                    <button class="delete-btn" onclick="removeItem(${index})">
+                      <i class="fas fa-trash-alt"></i>
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </td>
+              <td>₹${(item.price * item.quantity).toFixed(2)}</td>
+            </tr>
+          `;
+        });
+        cartBody.innerHTML = html;
+      }
+      
+      // Update total amount
+      const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      totalAmount.textContent = `₹${total.toFixed(2)}`;
+    }
+
+    function updateQuantity(index, change) {
+      const item = cartItems[index];
+      const newQuantity = item.quantity + change;
+      
+      if (newQuantity < 1) {
+        removeItem(index);
+        return;
+      }
+      
+      item.quantity = newQuantity;
+      debugLog(`Updated quantity of ${item.name} to ${newQuantity}`);
+      renderCart();
+    }
+
+    function removeItem(index) {
+      const removedItem = cartItems[index];
+      cartItems.splice(index, 1);
+      debugLog(`Removed item: ${removedItem.name}`);
+      updateStatus(`Removed: ${removedItem.name}`, "success");
+      renderCart();
+    }
+
+    function handleApiError(error) {
+      console.error("API Error:", error);
+      apiErrorCount++;
+      
+      if (apiErrorCount >= CONFIG.MAX_RETRIES) {
+        updateStatus("Falling back to mock data", "error");
+        updateUbidotsStatus("offline");
+        CONFIG.USE_MOCK_DATA = true;
+      } else {
+        updateStatus(`Error: ${error.message}`, "error");
+        updateUbidotsStatus("offline");
+        setTimeout(() => {
+          updateStatus("Retrying connection...", "ready");
+        }, 1000);
+      }
+    }
+
+    function mockScan() {
+      const productIds = Object.keys(PRODUCT_DATABASE);
+      const randomProductId = productIds[Math.floor(Math.random() * productIds.length)];
+      
+      setTimeout(() => {
+        const scannedUID = Number(randomProductId);
+        debugLog("Mock Scan - UID:", scannedUID);
+        
+        if (PRODUCT_DATABASE[scannedUID]) {
+          processProductScan(scannedUID);
+        } else {
+          updateStatus(`Unknown product UID: ${scannedUID}`, "error");
+        }
+      }, 1000);
+    }
+
+    function updateStatus(message, type, duration = 3000) {
+      const statusElement = document.getElementById("scannerStatus");
+      const icon = type === 'error' ? 'fa-exclamation-circle' : 
+                  type === 'success' ? 'fa-check-circle' : 
+                  type === 'scanning' ? 'fa-spinner fa-spin' : 'fa-rss';
+      
+      statusElement.innerHTML = `
+        <i class="fas ${icon}"></i>
+        <span>${message}</span>
+      `;
+      statusElement.className = `scanner-status ${type}`;
+      
+      if (type === 'error' || type === 'success') {
+        setTimeout(() => {
+          statusElement.innerHTML = `
+            <i class="fas fa-rss"></i>
+            <span>Scanner Ready</span>
+          `;
+          statusElement.className = 'scanner-status ready';
+        }, duration);
+      }
+      
+      if (CONFIG.DEBUG_MODE) {
+        debugLog(`Status: ${type} - ${message}`);
+      }
+    }
+
+    async function fetchWithTimeout(url, options, timeout) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return response;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
+    }
+
+    function debugLog(...args) {
+      if (CONFIG.DEBUG_MODE) {
+        console.log("[DEBUG]", ...args);
+        const debugOutput = document.getElementById("debugOutput");
+        if (debugOutput) {
+          const timestamp = new Date().toLocaleTimeString();
+          debugOutput.innerHTML += `<div>[${timestamp}] ${args.join(" ")}</div>`;
+          debugOutput.scrollTop = debugOutput.scrollHeight;
+        }
+      }
+    }
+
+    function updateUbidotsStatus(status) {
+      const statusElement = document.getElementById("ubidotsStatus");
+      if (statusElement) {
+        statusElement.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        statusElement.className = `status-value ${status}`;
+      }
+    }
+
+    function updateLastUpdateTime() {
+      const lastUpdateElement = document.getElementById("lastUpdate");
+      if (lastUpdateElement) {
+        const now = new Date();
+        lastUpdateElement.textContent = now.toLocaleTimeString();
+      }
+    }
+
+    function showErrorToast(message) {
+      const toast = document.getElementById('errorToast');
+      toast.querySelector('span').textContent = message;
+      toast.classList.add('show');
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
